@@ -1,9 +1,10 @@
 package com.example.wapp.screen.auth
 
 import android.app.Application
+import android.content.Context
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wapp.data.Markers
 import com.example.wapp.data.User
 import com.example.wapp.getCurrentTimestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -22,6 +23,10 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
     val currentUser = auth.currentUser
 
 
+    private val _users = MutableStateFlow<List<User>?>(null)
+    val users: StateFlow<List<User>?> get() = _users
+
+
     private val _usersInfo = MutableStateFlow<User?>(null)
     val userInfo: StateFlow<User?> get() = _usersInfo
 
@@ -31,6 +36,86 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
         auth.signOut()
         onSuccess()
     }
+
+    fun getAllUsers(context: Context){
+        viewModelScope.launch {
+            try {
+                val users = withContext(Dispatchers.IO){
+                    loadAllUsers(context)
+                }
+                _users.value = users
+
+            }catch (e: Exception){
+                _users.value = null
+            }
+        }
+    }
+
+
+
+    fun updateUserByUserUid(item:User, context: Context,){
+        val currentTimestamp = getCurrentTimestamp()
+
+        val user = item.copy(
+            updatedAt = currentTimestamp
+        ).toMap()
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO){
+
+                    updateUser(item = item, context=context, updatedData = user)
+                }
+            }catch (e: Exception){
+                Toast.makeText(context, "Terjadi Kesalahan Sistem ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun updateUser(item:User, context: Context, updatedData: Map<String, Any>){
+        db.collection(USER_COLLECTION)
+            .document(item.id)
+            .update(updatedData)
+            .addOnSuccessListener {
+                Toast.makeText(context, "Data berhasil diperbarui", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(context, "Gagal memperbarui data: ${exception.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    suspend private fun loadAllUsers(context: Context):List<User>? {
+        return try {
+            val snapShot = db.collection(USER_COLLECTION).get().await()
+            if (!snapShot.isEmpty) {
+                snapShot.documents.map { document ->
+                    val id = document.id
+                    val name = document.getString("name")
+                    val email = document.getString("email") ?: ""
+                    val phone = document.getString("phone") ?: ""
+                    val role = document.getString("role") ?: ""
+                    val createdAt = document.getString("createdAt") ?: ""
+                    val lastLogin = document.getString("lastLogin") ?: ""
+                    val updatedAt = document.getString("updatedAt") ?: ""
+                    User(
+                        id = id,
+                        name = name!!,
+                        email = email,
+                        phone = phone,
+                        role = role,
+                        createdAt = createdAt,
+                        lastLogin = lastLogin,
+                        updatedAt = updatedAt
+                    )
+                }
+            } else {
+                Toast.makeText(context, "Tidak Ada User Ditemukan", Toast.LENGTH_SHORT).show()
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
 
 
     fun loginUser(email: String, password: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
@@ -79,7 +164,6 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
 
                         val currentTimestamp = getCurrentTimestamp()
 
-                        // Create a User object
                         val user = User(
                             id = userId,
                             name = name,
@@ -87,7 +171,8 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
                             phone = phone,
                             role = "user",
                             createdAt = currentTimestamp,
-                            lastLogin = currentTimestamp
+                            lastLogin = currentTimestamp,
+                            updatedAt = currentTimestamp
                         )
 
                         val userData = user.toMap()
@@ -119,7 +204,8 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
             "phone" to this.phone,
             "role" to this.role,
             "createdAt" to this.createdAt,
-            "lastLogin" to this.lastLogin
+            "lastLogin" to this.lastLogin,
+            "updatedAt" to this.updatedAt
         )
     }
 
@@ -135,6 +221,7 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
                         val createdAt = document.getString("createdAt") ?: ""
                         val name = document.getString("name") ?: ""
                         val phone = document.getString("phone") ?: ""
+                        val updatedAt = document.getString("updatedAt") ?: ""
                         val user = User(
                             id = userId,
                             name = name,
@@ -142,7 +229,8 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
                             phone = phone,
                             role = role,
                             createdAt = createdAt,
-                            lastLogin = lastLogin
+                            lastLogin = lastLogin,
+                            updatedAt = updatedAt
                         )
                         onSuccess(user)
                     } else {
@@ -175,17 +263,12 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
 
     suspend fun getUserInfo(): User? {
         return try {
-            // Get current user ID
             val userId = auth.currentUser?.uid
 
-            // Proceed only if the user is logged in
             if (userId != null) {
-                // Fetch the user document from Firestore
                 val documentSnapshot = db.collection(USER_COLLECTION).document(userId).get().await()
 
-                // Check if the document exists
                 if (documentSnapshot.exists()) {
-                    // Map the document fields to a User object
                     val id = documentSnapshot.id
                     val name = documentSnapshot.getString("name") ?: ""
                     val email = documentSnapshot.getString("email") ?: ""
@@ -193,19 +276,16 @@ class AuthViewModel(application: Application): AndroidViewModel(application= app
                     val phone = documentSnapshot.getString("phone") ?: ""
                     val createdAt = documentSnapshot.getString("createdAt") ?: ""
                     val lastLogin = documentSnapshot.getString("lastLogin") ?: ""
+                    val updatedAt = documentSnapshot.getString("updatedAt") ?:""
 
-                    // Return the User object
-                    User(id = id, name =  name, email= email,role= role, phone =  phone, createdAt =  createdAt, lastLogin =  lastLogin)
+                    User(id = id, name =  name, email= email,role= role, phone =  phone, createdAt =  createdAt, lastLogin =  lastLogin, updatedAt = updatedAt)
                 } else {
-                    // If the document doesn't exist, return null
                     null
                 }
             } else {
-                // If no user is logged in, return null
                 null
             }
         } catch (e: Exception) {
-            // Handle any errors (e.g., network failure)
             null
         }
     }

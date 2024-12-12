@@ -17,4 +17,5 @@ sealed class RouteApp(
     object AdminWisata: RouteApp(routeid = "AdminWisata", title = "Wisata")
     object AdminKuliner: RouteApp(routeid = "AdminKuliner", title = "Kuliner")
     object NavigasiSuccess: RouteApp(routeid = "NavigasiSuccess", title = "Success")
+    object UsersScreeen: RouteApp(routeid = "UsersScreeen", title = "Users")
 }

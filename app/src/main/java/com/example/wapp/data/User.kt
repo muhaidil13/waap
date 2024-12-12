@@ -8,5 +8,6 @@ data class User(
     val phone: String,
     val role: String = "user",
     val createdAt: String,
-    val lastLogin: String
+    val lastLogin: String,
+    val updatedAt: String,
 )

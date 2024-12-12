@@ -3,22 +3,14 @@ package com.example.wapp
 import android.util.Log
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -39,6 +31,7 @@ import com.example.wapp.screen.SplashScreen
 import com.example.wapp.screen.WisataScreen
 import com.example.wapp.screen.admin.AdminDashboard
 import com.example.wapp.screen.admin.AdminKulinerScreen
+import com.example.wapp.screen.admin.AdminUsers
 import com.example.wapp.screen.admin.AdminWisataScreen
 import com.example.wapp.screen.auth.AuthViewModel
 import com.example.wapp.screen.maps.DestinationScreen
@@ -56,11 +49,10 @@ import com.mapbox.navigation.core.MapboxNavigation
 @Composable
 fun NavigationApp(mapboxNavigation: MapboxNavigation){
     val navController = rememberNavController()
-    val mainViewModel: MainViewModel = viewModel()
     val authViewModel: AuthViewModel = viewModel()
     val mapViewModel: MapsViewModel = viewModel()
     mapViewModel.setMapboxNavigation(mapboxNavigation)
-    Navigation(navController = navController, mainViewModel =  mainViewModel, authViewModel =  authViewModel, mapViewModel=mapViewModel)
+    Navigation(navController = navController,  authViewModel =  authViewModel, mapViewModel=mapViewModel)
 }
 
 
@@ -69,13 +61,12 @@ fun NavigationApp(mapboxNavigation: MapboxNavigation){
 @ExperimentalLayoutApi
 @ExperimentalPermissionsApi
 @Composable
-fun Navigation(navController: NavHostController, mainViewModel: MainViewModel, authViewModel: AuthViewModel, mapViewModel: MapsViewModel){
+fun Navigation(navController: NavHostController, authViewModel: AuthViewModel, mapViewModel: MapsViewModel){
     var isLoggedIn by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val user = authViewModel.currentUser
         isLoggedIn = user != null
     }
-    val scope = rememberCoroutineScope()
     SharedTransitionLayout {
         val firstRoute = if (isLoggedIn) BottomMenuScreen.HomePage.route else RouteApp.AuthScreen.routeid
         val userID = authViewModel.currentUser?.uid
@@ -164,7 +155,10 @@ fun Navigation(navController: NavHostController, mainViewModel: MainViewModel, a
                id?.let {
                    DestinationScreen(mapsViewModel= mapViewModel, navController = navController, id=it, userId=userID!!)
                }
-
+           }
+           
+           composable(RouteApp.UsersScreeen.routeid) {
+               AdminUsers(authViewModel = authViewModel)
            }
        }
     }

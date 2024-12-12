@@ -60,7 +60,9 @@ fun ProfileScreen(navController: NavController, authViewModel: AuthViewModel){
             email = "",
             lastLogin = "",
             role = "",
-            createdAt = ""))
+            createdAt = "",
+            updatedAt = ""
+        ))
     }
     var error by remember {
         mutableStateOf("")
