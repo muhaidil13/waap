@@ -588,10 +588,64 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
             .document(markerId)  // Menggunakan ID marker yang ingin dihapus
             .delete()  // Menghapus dokumen
             .addOnSuccessListener {
+                deleteImageByMarkerId(markerId)
+                deleteReviewByMarkerId(markerId)
                 Toast.makeText(context, "Sukses Menghapus Marker", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener {
                 Toast.makeText(context, "Gagal Menghapus Marker", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    fun deleteReviewByMarkerId(markerid: String){
+        firestore.collection(REVIEW_COLLECTION)
+            .whereEqualTo("markerId", markerid) // Mencari dokumen berdasarkan nama
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                for (document in querySnapshot) {
+                    // Menghapus dokumen berdasarkan ID-nya
+                    firestore.collection(IMAGE_COLLECTION).document(document.id)
+                        .delete()
+                        .addOnSuccessListener {
+                            Log.d("Firestore", "Dokumen dengan nama John Doe berhasil dihapus.")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("Firestore", "Error saat menghapus dokumen: ", e)
+                        }
+                }
+
+                if (querySnapshot.isEmpty) {
+                    Log.d("Firestore", "Tidak ada dokumen dengan nama John Doe.")
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error saat mencari dokumen: ", e)
+            }
+    }
+
+    fun  deleteImageByMarkerId(markerid:String){
+        firestore.collection(IMAGE_COLLECTION)
+            .whereEqualTo("markerId", markerid) // Mencari dokumen berdasarkan nama
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                for (document in querySnapshot) {
+                    // Menghapus dokumen berdasarkan ID-nya
+                    firestore.collection(IMAGE_COLLECTION).document(document.id)
+                        .delete()
+                        .addOnSuccessListener {
+                            Log.d("Firestore", "Dokumen dengan nama John Doe berhasil dihapus.")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("Firestore", "Error saat menghapus dokumen: ", e)
+                        }
+                }
+
+                if (querySnapshot.isEmpty) {
+                    Log.d("Firestore", "Tidak ada dokumen dengan nama John Doe.")
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error saat mencari dokumen: ", e)
             }
     }
 
