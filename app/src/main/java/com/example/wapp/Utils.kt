@@ -3,6 +3,7 @@ package com.example.wapp
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
@@ -42,6 +43,29 @@ fun convertDrawableToBitmap(sourceDrawable: Drawable?): Bitmap? {
         bitmap
     }
 }
+
+fun saveUriToFile(context: Context, uri: Uri): File {
+    val bitmap = uriToBitmap(context, uri)
+    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val resizedBitmap = resizeBitmap(bitmap!!)
+    val file = File(context.cacheDir, "JPEG_${timeStamp}.jpeg")
+    file.outputStream().use {
+        resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+    }
+    return file
+}
+fun uriToBitmap(context: Context, uri: Uri): Bitmap? {
+    return try {
+        val contentResolver = context.contentResolver
+        contentResolver.openInputStream(uri)?.use { inputStream ->
+            BitmapFactory.decodeStream(inputStream)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
 
 fun saveBitmapToFile(context: Context, bitmap: Bitmap): File {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())

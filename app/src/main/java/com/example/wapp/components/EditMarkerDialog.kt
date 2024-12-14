@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun EditMarkerDialog(location: Point, marker: Markers?, onDismis:() -> Unit, onSubmit: (Markers) -> Unit, onCameraClick: () -> Unit) {
+fun EditMarkerDialog(location: Point, marker: Markers?, onDismis:() -> Unit, onSubmit: (Markers) -> Unit, onCameraClick: () -> Unit,  onGaleryClick:() -> Unit) {
     val scrollState = rememberScrollState()
     val name = remember {
         mutableStateOf(marker?.locationName ?: "")
@@ -77,7 +77,6 @@ fun EditMarkerDialog(location: Point, marker: Markers?, onDismis:() -> Unit, onS
     Log.d("des", desctiption.value)
 
     val context = LocalContext.current
-    val focusManager = LocalFocusManager.current
 
 
     AlertDialog(
@@ -179,18 +178,27 @@ fun EditMarkerDialog(location: Point, marker: Markers?, onDismis:() -> Unit, onS
                         Text(text = "Kuliner", color = if (!radioButtonState.value) Color.Blue else Color.Black)
                     }
                 }
-                Column {
+                Column(modifier = Modifier.fillMaxWidth()){
                     Text(text = "Gambar", color = MaterialTheme.colorScheme.primary, style = TextStyle(
                         fontWeight = FontWeight.Normal,
                         fontSize = 16.sp)
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    Button(onClick =onCameraClick, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.onPrimary), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary) ) {
-                        Text(text = "Open Camera", style = TextStyle(
-                            fontWeight = FontWeight.Normal,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 13.sp)
-                        )
+                    Row {
+                        Button(onClick =onCameraClick, modifier = Modifier.weight(.5f), colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.onPrimary), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary) ) {
+                            Text(text = "Camera", style = TextStyle(
+                                fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 13.sp)
+                            )
+                        }
+                        Button(onClick =onGaleryClick, modifier = Modifier.weight(.5f), colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.onPrimary), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary) ) {
+                            Text(text = "Galery", style = TextStyle(
+                                fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 13.sp)
+                            )
+                        }
                     }
 
                 }

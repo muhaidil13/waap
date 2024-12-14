@@ -44,6 +44,7 @@ import com.example.wapp.RequestPermissions
 import com.example.wapp.data.Markers
 
 import com.example.wapp.saveBitmapToFile
+import com.example.wapp.saveUriToFile
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.rememberPermissionState
@@ -80,6 +81,18 @@ fun ItemCard(
                     onUpload.invoke(file)
                 }
 
+            }
+        }
+    )
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                val file = saveUriToFile(context, uri)
+                onUpload?.let {
+                    onUpload.invoke(file)
+                }
             }
         }
     )
@@ -248,7 +261,13 @@ fun ItemCard(
                             }else{
                                 cameraLauncher.launch(null)
                             }
-
+                        },
+                        onGaleryClick = {
+                            if(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
+                                permissionState.launchMultiplePermissionRequest()
+                            }else{
+                                galleryLauncher.launch("image/*")
+                            }
                         }
 
                     )
