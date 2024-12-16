@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
@@ -44,14 +45,12 @@ fun HistoryComponents(
     navController: NavController
 ){
     val navhist = mapsViewModel.listnavigationHistory.collectAsState()
-    val marker = mapsViewModel.marker.collectAsState()
     LaunchedEffect(Unit){
         authViewModel.currentUser?.let {
             mapsViewModel.getAllNavigationHistoryUser(it.uid)
         }
     }
     val scrollState = rememberScrollState()
-    val scrollStateChild = rememberScrollState()
     BoxWithConstraints(modifier = Modifier.fillMaxSize()){
         val maxh = maxHeight
         Box(modifier = Modifier
@@ -86,31 +85,35 @@ fun HistoryComponents(
         Column(modifier = Modifier
             .fillMaxWidth()
             .padding(start = 20.dp, end = 20.dp, top = 120.dp, bottom = 20.dp)
-
-            .verticalScroll(scrollState)
+            .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ){
-
-
             navhist.value?.let {  nav ->
                nav.forEach {
-                   val isExpand = remember{
-                       mutableStateOf(false)
-                   }
-                   val cardHeight = if(isExpand.value) maxh * .3f else maxh * .06f
+
                    Box(modifier = Modifier
-                       .height(cardHeight)
+                       .height(maxh * .09f)
                        .background(MaterialTheme.colorScheme.onPrimary)
                        .fillMaxWidth()
                        .clickable {
-                           isExpand.value = !isExpand.value
-                           mapsViewModel.getMarkersById(it.destinationId)
+                           navController.navigate("DetailHistory/${it.navId}")
                        }
                    ){
-                       Column(modifier = Modifier
-                           .fillMaxSize()
-                           ,
-                           verticalArrangement = Arrangement.spacedBy(15.dp),){
-                           Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically){
+
+                       Row(modifier = Modifier
+                           .fillMaxSize().padding(end = 10.dp),
+                           verticalAlignment = Alignment.CenterVertically,
+                           horizontalArrangement = Arrangement.SpaceBetween
+                           ){
+
+                           Column(modifier = Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.Start, verticalArrangement = Arrangement.spacedBy(10.dp)){
+                               Text(
+                                   text = it.startStreetName, style = TextStyle(
+                                       color = MaterialTheme.colorScheme.primary,
+                                       fontWeight = FontWeight.SemiBold,
+                                       fontSize = 17.sp
+                                   )
+                               )
                                Text(
                                    text = it.startTime, style = TextStyle(
                                        color = MaterialTheme.colorScheme.primary,
@@ -118,91 +121,8 @@ fun HistoryComponents(
                                        fontSize = 15.sp
                                    )
                                )
-                               Icon(imageVector = Icons.Filled.KeyboardArrowDown, tint = MaterialTheme.colorScheme.primary, contentDescription = "")
                            }
-                           marker.value?.let {  mark ->
-                               if(isExpand.value){
-                                   Column(
-                                       modifier = Modifier
-                                           .fillMaxSize()
-                                           .padding(horizontal = 20.dp)
-                                           .verticalScroll(scrollStateChild),
-                                       verticalArrangement = Arrangement.spacedBy(3.dp),
-                                   ){
-                                      Row {
-                                          Text(text = "Tujuan Anda ", style = TextStyle(
-                                              fontSize = 15.sp,
-                                              fontWeight = FontWeight.SemiBold,
-                                              color = MaterialTheme.colorScheme.primary)
-                                          )
-                                          Text(text = mark.locationName, style = TextStyle(
-                                              fontSize = 15.sp,
-                                              fontWeight = FontWeight.SemiBold,
-                                              color = MaterialTheme.colorScheme.primary)
-                                          )
-                                      }
-                                       Spacer(modifier = Modifier.height(10.dp))
-                                       Column (
-                                           modifier = Modifier
-                                               .fillMaxWidth()
-                                               .padding(5.dp)
-                                           ,
-                                           verticalArrangement = Arrangement.spacedBy(3.dp)
-                                       ){
-                                           Row {
-                                               Text(text = "Jarak Tempuh", style = TextStyle(
-                                                   fontSize = 12.sp,
-                                                   fontWeight = FontWeight.Normal,
-                                                   color = MaterialTheme.colorScheme.primary)
-                                               )
-                                               Text(text = it.totalJarak, style = TextStyle(
-                                                   fontSize = 12.sp,
-                                                   fontWeight = FontWeight.Normal,
-                                                   color = MaterialTheme.colorScheme.primary)
-                                               )
-                                           }
-                                           Row {
-                                               Text(text = "Waktu Tempuh", style = TextStyle(
-                                                   fontSize = 12.sp,
-                                                   fontWeight = FontWeight.Normal,
-                                                   color = MaterialTheme.colorScheme.primary)
-                                               )
-                                               Text(text = it.totalWaktu, style = TextStyle(
-                                                   fontSize = 12.sp,
-                                                   fontWeight = FontWeight.Normal,
-                                                   color = MaterialTheme.colorScheme.primary)
-                                               )
-                                           }
-                                           Row {
-                                               Text(text = "Di Mulai Pada", style = TextStyle(
-                                                   fontSize = 12.sp,
-                                                   fontWeight = FontWeight.Normal,
-                                                   color = MaterialTheme.colorScheme.primary)
-                                               )
-                                               Text(text = it.startTime, style = TextStyle(
-                                                   fontSize = 12.sp,
-                                                   fontWeight = FontWeight.Normal,
-                                                   color = MaterialTheme.colorScheme.primary)
-                                               )
-                                           }
-                                           Row {
-                                               Text(text = "Berakhir Pada", style = TextStyle(
-                                                   fontSize = 12.sp,
-                                                   fontWeight = FontWeight.Normal,
-                                                   color = MaterialTheme.colorScheme.primary)
-                                               )
-                                               Text(text = it.endTime!!, style = TextStyle(
-                                                   fontSize = 12.sp,
-                                                   fontWeight = FontWeight.Normal,
-                                                   color = MaterialTheme.colorScheme.primary)
-                                               )
-                                           }
-
-                                       }
-                                   }
-                               }
-                           }
-
+                           Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos, tint = MaterialTheme.colorScheme.primary, contentDescription = "")
                        }
 
                    }

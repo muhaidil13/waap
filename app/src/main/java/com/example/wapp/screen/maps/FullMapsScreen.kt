@@ -82,9 +82,6 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
 
 
     Log.d("Ini User Info", userInfo!!.role)
-    var error by remember {
-        mutableStateOf("")
-    }
 
 
 

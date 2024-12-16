@@ -391,6 +391,40 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
         }
     }
 
+    suspend fun getNavigationById(id: String): NavigationHistory?{
+        return try {
+            val querySnapShot = firestore.collection(NAVIGASI_COLLECTION).document(id)
+                .get()
+                .await()
+            if (querySnapShot != null){
+                val navID = querySnapShot.id
+                val userId = querySnapShot.getString("userId") ?: ""
+                val destinationId = querySnapShot.getString("destinationId") ?: ""
+                val totalJarak = querySnapShot.getString("totalJarak") ?: ""
+                val startStreetName = querySnapShot.getString("startStreetName") ?: ""
+                val totalWaktu = querySnapShot.getString("totalWaktu") ?: ""
+                val startTime = querySnapShot.getString("startTime") ?: ""
+                val createdAt = querySnapShot.getString("createdAt") ?: ""
+                val endTime = querySnapShot.getString("endTime") ?: ""
+
+                NavigationHistory(
+                    endTime = endTime,
+                    userId = userId,
+                    navId = navID,
+                    startTime = startTime,
+                    createdAt = createdAt,
+                    destinationId = destinationId,
+                    totalWaktu = totalWaktu, totalJarak = totalJarak,
+                    startStreetName = startStreetName
+                )
+            }else{
+                null
+            }
+        }catch (e:Exception){
+            null
+        }
+    }
+
 
     suspend fun getNavigationHistoryByUserID(userId:String): List<NavigationHistory>? {
         return try {
@@ -588,12 +622,38 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
             .document(markerId)  // Menggunakan ID marker yang ingin dihapus
             .delete()  // Menghapus dokumen
             .addOnSuccessListener {
+                deleteHistoryByMarkerId(markerId)
                 deleteImageByMarkerId(markerId)
                 deleteReviewByMarkerId(markerId)
                 Toast.makeText(context, "Sukses Menghapus Marker", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener {
                 Toast.makeText(context, "Gagal Menghapus Marker", Toast.LENGTH_SHORT).show()
+            }
+    }
+    fun deleteHistoryByMarkerId(markerid: String){
+        firestore.collection(NAVIGASI_COLLECTION)
+            .whereEqualTo("markerId", markerid) // Mencari dokumen berdasarkan nama
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                for (document in querySnapshot) {
+                    // Menghapus dokumen berdasarkan ID-nya
+                    firestore.collection(IMAGE_COLLECTION).document(document.id)
+                        .delete()
+                        .addOnSuccessListener {
+                            Log.d("Firestore", "Dokumen dengan nama John Doe berhasil dihapus.")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("Firestore", "Error saat menghapus dokumen: ", e)
+                        }
+                }
+
+                if (querySnapshot.isEmpty) {
+                    Log.d("Firestore", "Tidak ada dokumen dengan nama John Doe.")
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error saat mencari dokumen: ", e)
             }
     }
 

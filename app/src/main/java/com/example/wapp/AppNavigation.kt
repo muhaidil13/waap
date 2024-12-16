@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -18,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.wapp.data.NavigationHistory
 import com.example.wapp.screen.components.BottomMenuScreen
 import com.example.wapp.screen.AuthScreen
 import com.example.wapp.screen.maps.FullMapsScreen
@@ -34,12 +36,14 @@ import com.example.wapp.screen.admin.AdminKulinerScreen
 import com.example.wapp.screen.admin.AdminUsers
 import com.example.wapp.screen.admin.AdminWisataScreen
 import com.example.wapp.screen.auth.AuthViewModel
+import com.example.wapp.screen.components.DetailHistory
 import com.example.wapp.screen.maps.DestinationScreen
 import com.example.wapp.screen.maps.MapNavigate
 import com.example.wapp.screen.maps.MapsViewModel
 import com.example.wapp.screen.maps.NavigasiSucess
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.mapbox.navigation.core.MapboxNavigation
+import kotlinx.coroutines.launch
 
 
 @ExperimentalSharedTransitionApi
@@ -67,6 +71,7 @@ fun Navigation(navController: NavHostController, authViewModel: AuthViewModel, m
         val user = authViewModel.currentUser
         isLoggedIn = user != null
     }
+    val courutineScope = rememberCoroutineScope()
     SharedTransitionLayout {
         val firstRoute = if (isLoggedIn) BottomMenuScreen.HomePage.route else RouteApp.AuthScreen.routeid
         val userID = authViewModel.currentUser?.uid
@@ -149,12 +154,42 @@ fun Navigation(navController: NavHostController, authViewModel: AuthViewModel, m
 
            composable(
                "Detail/{id}",
-               arguments = listOf(navArgument("id") { type = NavType.StringType })
+               arguments = listOf(
+                   navArgument("id") { type = NavType.StringType },
+               )
            ) { navBackStackEntry ->
                val id = navBackStackEntry.arguments?.getString("id")
                id?.let {
                    DestinationScreen(mapsViewModel= mapViewModel, navController = navController, id=it, userId=userID!!)
                }
+           }
+           composable(
+               "DetailHistory/{destinationId}",
+               arguments = listOf(
+                   navArgument("destinationId") { type = NavType.StringType }
+               )
+           ) { navBackStackEntry ->
+               val navId = navBackStackEntry.arguments?.getString("destinationId")
+               val item = remember {
+                   mutableStateOf<NavigationHistory?>(null)
+               }
+
+
+               if(navId != null){
+                   LaunchedEffect (Unit){
+                       item.value =  mapViewModel.getNavigationById(navId)
+
+                   }
+                   Log.d("Nav ID is", navId)
+
+
+                   item.value?.let {
+                       Log.d("Nav ID is", it.endTime!!)
+                       DetailHistory(item = it, mapsViewModel= mapViewModel, navController)
+                   }
+
+               }
+
            }
            
            composable(RouteApp.UsersScreeen.routeid) {
