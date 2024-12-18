@@ -105,9 +105,7 @@ fun DestinationScreen(
     id: String,
     userId: String
 ) {
-    val markers by mapsViewModel.markers.collectAsState()
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val context = LocalContext.current
     val fusedLocationProviderClient = getFusedLocationProviderClient(context)
     val locationUser = remember {
