@@ -52,6 +52,7 @@ import androidx.navigation.NavController
 import com.example.wapp.R
 import com.example.wapp.RouteApp
 import com.example.wapp.bitmapFromDrawableRes
+import com.example.wapp.data.Markers
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
 import com.mapbox.common.location.Location
@@ -685,7 +686,8 @@ fun MapNavigate(mapsViewModel: MapsViewModel, userId: String,latitude:Double, lo
         }
     }
 }
-private fun addMarker(mapView: MapView, point: Point, mapsViewModel: MapsViewModel){
+
+fun addMarker(mapView: MapView, point: Point, mapsViewModel: MapsViewModel, markers: Markers?=null){
     val pointManager = mapView.annotations.createPointAnnotationManager()
     val annotationOptions = PointAnnotationOptions()
         .withPoint(Point.fromLngLat(point.longitude(), point.latitude()))
@@ -695,6 +697,7 @@ private fun addMarker(mapView: MapView, point: Point, mapsViewModel: MapsViewMod
     pointManager.addClickListener{clickMarker ->
         if(mark.id == clickMarker.id){
             Toast.makeText(mapView.context, "Marker ${point.longitude()}", Toast.LENGTH_LONG ).show()
+
             updateCamera(mapView = mapView, point = point, mapsViewModel.LOG_TAG)
         }
         Toast.makeText(mapView.context, "Sukses Menambah Marker", Toast.LENGTH_SHORT).show()

@@ -47,11 +47,8 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
     private val firestore = FirebaseFirestore.getInstance()
 
 
-    private val _startPosition = MutableStateFlow<Point>(Point.fromLngLat(119.47908175133358, -5.170677805504212))
-    val startPosition: StateFlow<Point> get() = _startPosition
-
-    private val _startBearing = MutableStateFlow<Double?>(null)
-    val startBearing: StateFlow<Double?> get() = _startBearing
+    private val _streetName = MutableStateFlow<String?>(null)
+    val streetName: StateFlow<String?> get() = _streetName
 
 
     private val _markers = MutableStateFlow<List<Markers>?>(null)
@@ -77,6 +74,8 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
     private val _photos = MutableStateFlow<List<Photo>?>(null)
     val photos: StateFlow<List<Photo>?> get() = _photos
 
+    private val _currentMarkersSelected = MutableStateFlow<Markers?>(null)
+    val currentMarkersSelected: StateFlow<Markers?> get() = _currentMarkersSelected
 
     private val _isError = MutableStateFlow(false)
     val isError: StateFlow<Boolean>
@@ -121,6 +120,12 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
 
     fun updateShowDialog(status: Boolean){
         _showDialog.value = status
+    }
+    fun selectedMarkers(marker: Markers?){
+        _currentMarkersSelected.value = marker
+    }
+    fun updateStreetName(streetName: String?){
+        _streetName.value = streetName
     }
 
     fun updateDestinationPosition(point: Point?) {
@@ -368,7 +373,7 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
                     val createdAt = document.getString("createdAt") ?: "Tidak Ditentukan"
                     val updatedAt = document.getString("updatedAt") ?: "Tidak Ditentukan"
                     val description = document.getString("description") ?: ""
-
+                    val streetName = document.getString("streetName") ?: "Lokasi Tidak Mendukung"
                     // Return the Markers object for each document
                     Markers(
                         id = idMarker,
@@ -380,7 +385,8 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
                         addedBy = "Admin",
                         createdAt = createdAt,
                         updatedAt = updatedAt,
-                        description = description
+                        description = description,
+                        streetName = streetName
                     )
                 }
             } else {
@@ -514,8 +520,8 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
                     val createdAt = document.getString("createdAt") ?: "Tidak Ditentukan"
                     val updatedAt = document.getString("updatedAt") ?: "Tidak Ditentukan"
                     val description = document.getString("description") ?: ""
+                    val streetName = document.getString("streetName") ?: ""
 
-                    // Create and return a Markers object
                     Markers(
                         id = idMarker,
                         locationName = locationName,
@@ -526,15 +532,15 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
                         addedBy = "Admin",
                         createdAt = createdAt,
                         updatedAt = updatedAt,
-                        description = description
+                        description = description,
+                        streetName = streetName
                     )
                 }
             } else {
-                // Return null if no documents match
+
                 null
             }
         } catch (e: Exception) {
-            // Handle any exceptions (e.g., network failure)
             null
         }
     }
@@ -760,7 +766,7 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
                 val createdAt = documentSnapshot.getString("createdAt") ?: "Tidak Ditentukan"
                 val updatedAt = documentSnapshot.getString("updatedAt") ?: "Tidak Ditentukan"
                 val description = documentSnapshot.getString("description") ?: ""
-
+                val streetName = documentSnapshot.getString("streetName") ?: ""
                 // Return the Markers object
                 Markers(
                     id = idMarker,
@@ -772,7 +778,8 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
                     addedBy = "Admin",
                     createdAt = createdAt,
                     updatedAt = updatedAt,
-                    description = description
+                    description = description,
+                    streetName = streetName
                 )
             } else {
                 // Return null if the document doesn't exist
@@ -858,7 +865,6 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
 
     fun Markers.toMap():Map<String, Any>{
         return mapOf(
-
             "locationName" to  this.locationName,
             "type" to this.type,
             "description" to this.description,
@@ -868,6 +874,7 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
             "createdAt" to this.createdAt,
             "updatedAt" to this.updatedAt,
             "categoryId" to  this.categoryId,
+            "streetName" to this.streetName
         )
     }
 

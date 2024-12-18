@@ -63,7 +63,7 @@ import java.io.ByteArrayOutputStream
 //}
 
 @Composable
-fun MarkerDialog(location: Point, onDismis:() -> Unit, onAddMarker: (Markers) -> Unit ) {
+fun MarkerDialog(location: Point,streetName: String, onDismis:() -> Unit, onAddMarker: (Markers) -> Unit ) {
     val name = remember {
         mutableStateOf("")
     }
@@ -100,7 +100,8 @@ fun MarkerDialog(location: Point, onDismis:() -> Unit, onAddMarker: (Markers) ->
                         addedBy = "",
                         createdAt = "",
                         description =desctiption.value,
-                        updatedAt = ""
+                        updatedAt = "",
+                        streetName = streetName
                     )
                 ) },) {
                 Text(text = "Tambah")
@@ -108,7 +109,7 @@ fun MarkerDialog(location: Point, onDismis:() -> Unit, onAddMarker: (Markers) ->
 
         },
         title = {
-            Text(text = "Tambah Marker.kt", color = MaterialTheme.colorScheme.primary, style = TextStyle(
+            Text(text = "Tambah Marker", color = MaterialTheme.colorScheme.primary, style = TextStyle(
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 25.sp)
         )  },
@@ -118,8 +119,22 @@ fun MarkerDialog(location: Point, onDismis:() -> Unit, onAddMarker: (Markers) ->
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ){
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ){
+                    Text(text = "Jalan :", color = MaterialTheme.colorScheme.primary, style = TextStyle(
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 16.sp)
+                    )
+                    Text(text = streetName, color = MaterialTheme.colorScheme.primary, style = TextStyle(
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 15.sp)
+                    )
+                }
+
                 Column{
-                    Text(text = "Nama Anda", color = MaterialTheme.colorScheme.primary, style = TextStyle(
+                    Text(text = "Nama Tempat", color = MaterialTheme.colorScheme.primary, style = TextStyle(
                         fontWeight = FontWeight.Normal,
                         fontSize = 16.sp)
                     )

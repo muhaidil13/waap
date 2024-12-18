@@ -143,6 +143,27 @@ fun ItemCard(
                         )
                     }
                 }
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row {
+                        Text(
+                            text = "Nama Jalan : ",
+                            style = TextStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Light,
+                                fontSize = 13.sp
+                            )
+                        )
+                        Text(
+                            text = marker.streetName,
+                            style = TextStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Light,
+                                fontSize = 13.sp
+                            )
+                        )
+                    }
+                }
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row {
                         Text(

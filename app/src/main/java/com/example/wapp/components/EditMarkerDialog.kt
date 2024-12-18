@@ -63,6 +63,10 @@ fun EditMarkerDialog(location: Point, marker: Markers?, onDismis:() -> Unit, onS
         mutableStateOf(marker?.description ?: "")
     }
 
+    val streetName = remember {
+        mutableStateOf(marker?.streetName ?: "")
+    }
+
     val radioButtonState = remember{
         mutableStateOf( marker?.type == "wisata")
     }
@@ -102,7 +106,8 @@ fun EditMarkerDialog(location: Point, marker: Markers?, onDismis:() -> Unit, onS
                         addedBy = "",
                         createdAt = "",
                         description =desctiption.value,
-                        updatedAt = ""
+                        updatedAt = "",
+                        streetName =streetName.value
                     )
                 ) },) {
                 Text(text = "Selesai")
@@ -122,6 +127,19 @@ fun EditMarkerDialog(location: Point, marker: Markers?, onDismis:() -> Unit, onS
                     .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ){
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ){
+                    Text(text = "Nama Jalan :", color = MaterialTheme.colorScheme.primary, style = TextStyle(
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 16.sp)
+                    )
+                    Text(text = streetName.value, color = MaterialTheme.colorScheme.primary, style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp)
+                    )
+                }
                 Column{
                     Text(text = "Nama Tempat", color = MaterialTheme.colorScheme.primary, style = TextStyle(
                         fontWeight = FontWeight.Normal,

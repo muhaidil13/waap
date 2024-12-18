@@ -131,25 +131,28 @@ fun DestinationScreen(
             }
         }
     }
-    
-    ModalNavigationDrawer(
-        scrimColor = Color.Black.copy(alpha = .5f),
-        drawerContent = {
-            ModalDrawerSheet {
-                markers?.let { mark ->
-                    InputSugestions(cartItems = mark, locationOfUser = locationUser.value, drawerState = drawerState){ point: Point ->
-                        navController.navigate("navigasi/${id}/${point.latitude()}/${point.longitude()}",)
-                    }
-                }
-            }
-    }, drawerState=drawerState){
-        DestinasionContent(mapsViewModel, navController, id, drawerState, userId)
+    locationUser.value?.let {
+        DestinasionContent(mapsViewModel, navController, id, userId, it )
+
     }
+//
+//    ModalNavigationDrawer(
+//        scrimColor = Color.Black.copy(alpha = .5f),
+//        drawerContent = {
+//            ModalDrawerSheet {
+//                markers?.let { mark ->
+//                    InputSugestions(cartItems = mark, locationOfUser = , drawerState = drawerState){ point: Point ->
+//
+//                    }
+//                }
+//            }
+//    }, drawerState=drawerState){
+//    }
 }
 
 @ExperimentalLayoutApi
 @Composable
-fun  DestinasionContent(mapsViewModel: MapsViewModel, navController: NavController, id: String, drawerState: DrawerState, userId: String){
+fun  DestinasionContent(mapsViewModel: MapsViewModel, navController: NavController, id: String, userId: String, point: Point){
     val mark by mapsViewModel.marker.collectAsState()
     val images by mapsViewModel.photos.collectAsState()
     val reviews = mapsViewModel.reviews.collectAsState()
@@ -181,13 +184,11 @@ fun  DestinasionContent(mapsViewModel: MapsViewModel, navController: NavControll
             val maxw = maxWidth
             Box(modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 20.dp), contentAlignment = Alignment.BottomCenter){
+                .padding(vertical = 20.dp, horizontal = 20.dp), contentAlignment = Alignment.BottomCenter){
                 Column(modifier = Modifier
                     .fillMaxWidth()){
                     Button( modifier = Modifier.fillMaxWidth(), onClick = {
-                        courutineScope.launch {
-                            drawerState.open()
-                        }
+                        navController.navigate("navigasi/${id}/${point.latitude()}/${point.longitude()}",)
                     }) {
                         Text(text = "Start Navigate")
                     }
@@ -240,7 +241,7 @@ fun  DestinasionContent(mapsViewModel: MapsViewModel, navController: NavControll
                                     Spacer(modifier = Modifier.height(5.dp))
                                     Column(horizontalAlignment = Alignment.Start, ){
                                         Text(
-                                            text = "Nama Tempat",
+                                            text = "Nama Tempat :",
                                             style = TextStyle(
                                                 color = Color.Black,
                                                 fontSize = 18.sp,
@@ -257,6 +258,26 @@ fun  DestinasionContent(mapsViewModel: MapsViewModel, navController: NavControll
                                         )
 
                                     }
+                                    Column(horizontalAlignment = Alignment.Start, ){
+                                        Text(
+                                            text = "Nama Jalan :",
+                                            style = TextStyle(
+                                                color = Color.Black,
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        )
+                                        Text(
+                                            text = marker.streetName,
+                                            style = TextStyle(
+                                                color = Color.Black,
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Normal
+                                            )
+                                        )
+
+                                    }
+
                                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically){
                                         Text(
                                             text = "Rating :",

@@ -10,8 +10,13 @@ import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.content.res.AppCompatResources
+import com.example.wapp.screen.maps.MapsViewModel
+import com.mapbox.api.geocoding.v5.GeocodingCriteria
+import com.mapbox.api.geocoding.v5.MapboxGeocoding
+import com.mapbox.geojson.Point
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -104,3 +109,49 @@ fun hideKeyboard(context: Context) {
         inputMethodManager.hideSoftInputFromWindow(it.windowToken, 0)
     }
 }
+
+
+
+fun getStreetName(location: Point, accessToken: String, mapsViewModel: MapsViewModel) {
+    val geocoding = MapboxGeocoding.builder()
+        .accessToken(accessToken)
+        .query(location)
+        .geocodingTypes(
+            GeocodingCriteria.TYPE_ADDRESS,
+            GeocodingCriteria.TYPE_POI
+        )
+        .build()
+
+    geocoding.enqueueCall(object : retrofit2.Callback<com.mapbox.api.geocoding.v5.models.GeocodingResponse> {
+        override fun onResponse(
+            call: retrofit2.Call<com.mapbox.api.geocoding.v5.models.GeocodingResponse>,
+            response: retrofit2.Response<com.mapbox.api.geocoding.v5.models.GeocodingResponse>
+        ) {
+            if (response.isSuccessful) {
+                val results = response.body()?.features()
+                Log.d("Mapbox", "Full response: ${response.body()}")
+                Log.e("Mapbox", "Error response: ${response.errorBody()?.string()}")
+
+                if (!results.isNullOrEmpty()) {
+                    val streetName = results[0].placeName()
+                    Log.d("Mapbox", "Nama Jalan: $streetName")
+                    mapsViewModel.updateStreetName(streetName)
+                } else {
+                    Log.d("Mapbox", "Tidak ada hasil geocoding untuk lokasi ini.")
+                    mapsViewModel.updateStreetName("Tidak ada hasil geocoding untuk lokasi ini.")
+
+                }
+            } else {
+                mapsViewModel.updateStreetName("Tidak ada hasil geocoding untuk lokasi ini.")
+            }
+        }
+
+        override fun onFailure(
+            call: retrofit2.Call<com.mapbox.api.geocoding.v5.models.GeocodingResponse>,
+            t: Throwable
+        ) {
+            Log.e("Mapbox", "Error: ${t.localizedMessage}")
+        }
+    })
+}
+

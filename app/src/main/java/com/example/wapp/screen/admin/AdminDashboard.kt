@@ -39,7 +39,6 @@ fun AdminDashboard(navController: NavController, mapsViewModel: MapsViewModel){
                 Text(text = "Selamat Datang: Admin", style = TextStyle(color = MaterialTheme.colorScheme.primary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold))
             }
             HomeDashboard( scroll = scroll, navController = navController)
-
         }
     }
 }
