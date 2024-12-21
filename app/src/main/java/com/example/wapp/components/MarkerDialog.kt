@@ -43,29 +43,11 @@ import com.example.wapp.data.Markers
 import com.example.wapp.screen.components.InputType
 import com.google.firebase.firestore.GeoPoint
 import com.mapbox.geojson.Point
-import java.io.ByteArrayOutputStream
-//
-//
-//
-//val context = LocalContext.current
-//val selectedImageUri = remember { mutableStateOf<Uri?>(null) }
-//val selectedBitmap = remember { mutableStateOf<Bitmap?>(null) }
-//val cameraLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicturePreview()) { bitmap->
-//    bitmap?.let {
-//        val baos = ByteArrayOutputStream()
-//        it.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-//        val data = baos.toByteArray()
-//
-//        Log.d("testMapbox" ,"${data}")
-//        selectedBitmap.value = bitmap
-//    }
-//
-//}
 
 @Composable
-fun MarkerDialog(location: Point,streetName: String, onDismis:() -> Unit, onAddMarker: (Markers) -> Unit ) {
+fun MarkerDialog(location: Point,streetName: String, locationName: String? = null ,onDismis:() -> Unit, onAddMarker: (Markers) -> Unit ) {
     val name = remember {
-        mutableStateOf("")
+        mutableStateOf(locationName ?: "")
     }
 
     val type  = remember {

@@ -44,6 +44,9 @@ fun HistoryComponents(
     authViewModel: AuthViewModel,
     navController: NavController
 ){
+    authViewModel.currentUser?.let {
+        mapsViewModel.getAllNavigationHistoryUser(it.uid)
+    }
     val navhist = mapsViewModel.listnavigationHistory.collectAsState()
     LaunchedEffect(Unit){
         authViewModel.currentUser?.let {

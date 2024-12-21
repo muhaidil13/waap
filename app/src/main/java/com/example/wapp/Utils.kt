@@ -13,10 +13,14 @@ import android.net.Uri
 import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.content.res.AppCompatResources
+import com.example.wapp.data.remote.api.MapboxRetrofitClient
 import com.example.wapp.screen.maps.MapsViewModel
 import com.mapbox.api.geocoding.v5.GeocodingCriteria
 import com.mapbox.api.geocoding.v5.MapboxGeocoding
 import com.mapbox.geojson.Point
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -109,6 +113,7 @@ fun hideKeyboard(context: Context) {
         inputMethodManager.hideSoftInputFromWindow(it.windowToken, 0)
     }
 }
+
 
 
 

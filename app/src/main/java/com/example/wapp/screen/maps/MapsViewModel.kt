@@ -2,6 +2,7 @@ package com.example.wapp.screen.maps
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
@@ -12,15 +13,18 @@ import com.example.wapp.data.Markers
 import com.example.wapp.data.NavigationHistory
 import com.example.wapp.data.Photo
 import com.example.wapp.data.Reviews
+import com.example.wapp.data.remote.api.MapboxRetrofitClient
 import com.example.wapp.data.remote.api.RetrofitClient
 import com.example.wapp.data.remote.api.UploadResponse
-
+import com.example.wapp.data.remote.model.GeocodeResponse
+import com.example.wapp.data.remote.model.MapboxSearchResponse
 import com.example.wapp.getCurrentTimestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mapbox.geojson.Point
 import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.ui.maps.camera.data.MapboxNavigationViewportDataSource
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +38,8 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
+import java.net.URLEncoder
+import java.util.UUID
 
 
 class MapsViewModel(application: Application): AndroidViewModel(application= application){
@@ -77,6 +83,13 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
     private val _currentMarkersSelected = MutableStateFlow<Markers?>(null)
     val currentMarkersSelected: StateFlow<Markers?> get() = _currentMarkersSelected
 
+
+    private val _listsearchPlace = MutableStateFlow<List<Markers>?>(null)
+    val listSearchPlace: StateFlow<List<Markers>?> get () = _listsearchPlace
+
+    private val _searchPlaceSelected = MutableStateFlow<Markers?>(null)
+    val searchPlaceSelected: StateFlow<Markers?> get () = _searchPlaceSelected
+
     private val _isError = MutableStateFlow(false)
     val isError: StateFlow<Boolean>
         get() = _isError
@@ -109,10 +122,17 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
     lateinit var navigation: MapboxNavigation
 
 
+
+
+
     fun updateStatusmarkerIsAdded(status: Boolean){
         _markerIsAdded.value = status
     }
 
+
+    fun  updateSearchPlaceSelected(selectedMarkers: Markers?){
+        _searchPlaceSelected.value = selectedMarkers
+    }
 
     fun updateStartNavigation(status: Boolean){
         _isStart.value = status
@@ -134,6 +154,101 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
     fun setMapboxNavigation(mapboxNav: MapboxNavigation) {
         navigation = mapboxNav
     }
+
+    fun getFeatureDetails( accessToken: String, id: String) {
+         val sessionToken = UUID.randomUUID().toString() // Generate a new session token
+         viewModelScope.launch {
+            try {
+                val response = MapboxRetrofitClient.geocodingService.getFeatureDetails(
+                    id = id,
+                    accessToken = accessToken,
+                    sessionToken = sessionToken
+                )
+                if (response.features != null) {
+                    val feature = response.features[0]
+                    val cordinate = feature.geometry?.coordinates!!
+                    val newMarker = Markers(
+                        markerId = feature.properties?.mapbox_id ?: "No Namme",
+                        locationName = feature.properties?.name ?: "No Name" ,
+                        streetName = feature.properties?.full_address ?: "No Address",
+                        type = "",
+                        description = "No description available",
+                        latitude =cordinate[1],
+                        longitude =cordinate[0],
+                        categoryId = "",
+                        addedBy = "",
+                        createdAt = "2024-12-20T00:00:00Z",
+                        updatedAt = "2024-12-20T00:00:00Z"
+                    )
+
+                    updateSearchPlaceSelected(newMarker)
+                } else {
+                    Log.d("Response-Q", "No features found")
+                }
+
+        } catch (e: Exception) {
+            null
+        } }
+    }
+
+
+
+
+    fun search(query: String, accessToken: String) {
+        val sessionToken = UUID.randomUUID().toString() // Generate a new session token
+
+        viewModelScope.launch {
+            try {
+
+                val response = MapboxRetrofitClient.geocodingService.getSuggestedResults(
+                    query = query,
+                    limit = 5,
+                    types = "poi",
+                    country = "ID",
+                    accessToken = accessToken,
+                    sessionToken =sessionToken
+                )
+
+
+                if (response.suggestions.isNotEmpty()) {
+                    val updatedList = _listsearchPlace.value?.toMutableList() ?: mutableListOf()
+                    response.suggestions.forEach { feature ->
+
+                        val newMarker = Markers(
+                            markerId = feature.mapbox_id,
+                            locationName = feature.name,
+                            streetName = feature.full_address ?: "",
+                            type = "",
+                            description = "No description available",
+                            latitude = 0.0,
+                            longitude = 0.0,
+                            categoryId = "",
+                            addedBy = "",
+                            createdAt = "2024-12-20T00:00:00Z",
+                            updatedAt = "2024-12-20T00:00:00Z"
+                        )
+
+
+                        if (updatedList.none { it.streetName == newMarker.streetName }) {
+                            updatedList.add(newMarker)
+                        }
+                    }
+
+                    // Memperbarui state dengan daftar marker baru
+                    _listsearchPlace.value = updatedList
+                } else {
+                    Log.d("Response-Q", "No features found")
+                }
+            } catch (e: Exception) {
+                Log.e("SuggestError", "Error fetching suggestions: ${e.message}")
+            }
+        }
+    }
+
+    fun clearListsearchPlace(){
+        _listsearchPlace.value = null
+    }
+
 
     fun getListOfMarkerWisata() {
         viewModelScope.launch {
@@ -245,6 +360,35 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
            }
        }
     }
+    fun getStreetMarkersByGeometry(longitude: Double, latitude: Double, accessToken: String) {
+        viewModelScope.launch {
+            try {
+                val geocodeResponse = withContext(Dispatchers.IO + errorHandler) {
+                    getReverseGeocode(latitude = latitude, longitude = longitude, accessToken = accessToken)
+                }
+                val geo = geocodeResponse!!.features[0].properties
+                geo?.let {
+                    updateStreetName(it.place_formatted)
+                }
+
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    suspend fun getReverseGeocode(longitude: Double, latitude: Double, accessToken: String): GeocodeResponse? {
+        return try {
+            val response = MapboxRetrofitClient.geocodingService.reverseGeocode(longitude, latitude, accessToken)
+            if (response.isSuccessful) {
+                response.body() // Return the response body if successful
+            } else {
+                null // Handle error cases
+            }
+        } catch (e: Exception) {
+            null // Handle network or other exceptions
+        }
+    }
+
 
     fun getAllNavigationHistoryUser(id:String){
         viewModelScope.launch {
@@ -282,8 +426,7 @@ class MapsViewModel(application: Application): AndroidViewModel(application= app
         }
 
     }
-
-     private fun startNavigation(userId:String, idMarker:String, jarak: String, durationRemaining:String, startStreetName:String, context: Context, onSuccess: (NavigationHistory) -> Unit){
+    private fun startNavigation(userId:String, idMarker:String, jarak: String, durationRemaining:String, startStreetName:String, context: Context, onSuccess: (NavigationHistory) -> Unit){
          val currentTimestamp = getCurrentTimestamp()
          val navigationData = NavigationHistory(
              createdAt = currentTimestamp,

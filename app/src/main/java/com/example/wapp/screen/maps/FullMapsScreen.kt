@@ -62,9 +62,6 @@ import com.example.wapp.data.Markers
 import com.example.wapp.getStreetName
 import com.example.wapp.hideKeyboard
 import com.example.wapp.screen.auth.AuthViewModel
-import com.google.android.gms.location.LocationServices
-import com.mapbox.api.geocoding.v5.GeocodingCriteria
-import com.mapbox.api.geocoding.v5.MapboxGeocoding
 import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
@@ -75,12 +72,14 @@ import com.mapbox.maps.plugin.PuckBearing
 import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.animation.easeTo
+import com.mapbox.maps.plugin.animation.flyTo
 import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
 import com.mapbox.maps.plugin.gestures.addOnMapLongClickListener
 import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
+import com.mapbox.navigation.ui.maps.internal.ui.LocationComponent
 import kotlinx.coroutines.launch
 
 
@@ -94,21 +93,7 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
     val markerisAdded by mapsViewModel.markerIsAdded.collectAsState()
     val context = LocalContext.current
 
-    val initialCamera: CameraOptions = CameraOptions
-        .Builder()
-        .center(userLocation)
-        .zoom(17.0)
-        .pitch(20.0)
-        .bearing(30.0)
-        .build()
-
-
-
-    val mapInitOption = MapInitOptions(context, cameraOptions = initialCamera,  styleUri = Style.MAPBOX_STREETS)
-
-    val mapView = MapView(context, mapInitOption)
-
-
+    val mapView = MapView(context)
     Log.d("Ini User Info", userInfo!!.role)
 
 
@@ -129,8 +114,6 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
             return@LaunchedEffect
         }
 
-
-
         mapsViewModel.getAllMarkers()
     }
 
@@ -145,8 +128,8 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
         val p = Point.fromLngLat(point.longitude(), point.latitude())
         userInfo?.let {
             if(it.role == "admin"){
-                Log.d(mapsViewModel.LOG_TAG, "Marker.kt Custom: latitude is ${point.latitude()} longitude ${point.longitude()} ")
-                getStreetName(p, key, mapsViewModel)
+                mapsViewModel.getStreetMarkersByGeometry(longitude = point.longitude(), latitude =point.latitude() , accessToken = key)
+//                getStreetName(p, key, mapsViewModel)
                 mapsViewModel.updateDestinationPosition(point)
                 mapsViewModel.updateShowDialog(true)
                 if(markerisAdded){
@@ -157,11 +140,12 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
         true
     }
 
+    val selectedFeature by mapsViewModel.searchPlaceSelected.collectAsState()
+
 
     val showDialog by mapsViewModel.showDialog.collectAsState()
     val destinationPosition by mapsViewModel.destinationPoint.collectAsState()
     val showDesc by mapsViewModel.currentMarkersSelected.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
     Scaffold(
         ){innerPadding ->
         Box(modifier = Modifier
@@ -171,31 +155,12 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
 
             marker?.let {  mark ->
                 AndroidView(factory = {mapView}, modifier = Modifier.fillMaxSize())
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(end = 20.dp, bottom = 20.dp), contentAlignment = Alignment.BottomEnd){
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(30.dp)
-                    ){
-                        IconButton(onClick = {
-                            loadMap(mapView, mark, mapsViewModel)
-                        }) {
-                            Icon(imageVector = Icons.Filled.Refresh, contentDescription = "")
-                        }
-                        IconButton(onClick = {
-
-                        }) {
-                            Icon(imageVector = Icons.Filled.LocationOn, contentDescription = "")
-                        }
-                    }
-                }
-
             } ?: Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
                 Text(text = "Loading")
             }
             Box(modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(350.dp)
                 , contentAlignment = Alignment.TopCenter){
                 Column(modifier = Modifier
                     .fillMaxWidth()
@@ -209,17 +174,20 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
                     .background(MaterialTheme.colorScheme.onPrimary)
                 ){
                     Column(modifier = Modifier.padding(vertical = 10.dp, horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)){
-                        marker?.let {
-                            SearchMarker(
-                                cartItems = it,
-                                onItemSelected = { mark ->
-                                    Log.d("Selected Marker", "Selected: ${mark.longitude}")
-                                    mapsViewModel.selectedMarkers(mark)
-                                    val point = Point.fromLngLat(mark.longitude, mark.latitude)
-                                    showMarker(mapView=mapView, point, mapsViewModel)
-                                    hideKeyboard(context)
-                                }
-                            )
+                        marker?.let { markers ->
+                            userInfo?.let {
+                                SearchMarker(
+                                    cartItems = markers,
+                                    onItemSelected = { mark ->
+                                        Log.d("Selected Marker", "Selected: ${mark.longitude}")
+                                        mapsViewModel.selectedMarkers(mark)
+                                        hideKeyboard(context)
+                                    },
+                                    mapView = mapView,
+                                    mapsViewModel =mapsViewModel,
+                                    role = it.role
+                                )
+                            }
                         }
 
                     }
@@ -315,9 +283,20 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
                     }
                 }
             }
+        }
 
+        if(selectedFeature != null){
+            selectedFeature?.let { feature ->
+                val Point = Point.fromLngLat(feature.longitude, feature.latitude)
+                MarkerDialog(location = Point ,streetName = feature.streetName, locationName =feature.locationName,   onDismis = {
+                    mapsViewModel.updateSearchPlaceSelected(null)
+                }) { markers ->
+                    mapsViewModel.saveMarkerToDatabase(markers , context)
+                    mapsViewModel.updateSearchPlaceSelected(null)
+                    mapsViewModel.getAllMarkers()
 
-
+                }
+            }
         }
         if(showDialog && destinationPosition != null){
             destinationPosition?.let { location ->
@@ -328,11 +307,8 @@ fun FullMapsScreen(mapsViewModel: MapsViewModel, navController: NavController, a
                         mapsViewModel.updateStatusmarkerIsAdded(false)
                     }) { markers ->
                         mapsViewModel.saveMarkerToDatabase(markers , context)
+                        mapsViewModel.getAllMarkers()
                         mapsViewModel.updateShowDialog(false)
-
-                        marker?.let { m ->
-                            loadMap(mapView, m, mapsViewModel)
-                        }
                         mapsViewModel.updateStatusmarkerIsAdded(false)
                     }
                 }
@@ -379,11 +355,7 @@ private fun updateCamera(
         .startDelay(startDelay ?: 800L)
         .build()
 
-    val isValid = mapView.mapboxMap.isValid()
-
-    if (isValid) {
-        Log.d(LOG_TAG, "Map is valid: $isValid")
-        mapView.apply {
+    mapView.apply {
             mapView.camera.easeTo(
                 CameraOptions.Builder()
                     .center(point)
@@ -394,10 +366,19 @@ private fun updateCamera(
                     .build(),
                 mapAnimationOptions
             )
-        }
-    } else {
-        Log.d(LOG_TAG, "Map is invalid: $isValid")
+
     }
+}
+
+fun updateMapLocation(mapView: MapView, longitude: Double, latitude: Double) {
+    val mapboxMap = mapView.mapboxMap
+    mapboxMap.flyTo(
+        CameraOptions.Builder()
+            .center(Point.fromLngLat(longitude, latitude)) // Set center to the desired coordinates
+            .zoom(20.0)  // Set the zoom level
+            .build()
+    )
+
 }
 
 
@@ -408,18 +389,33 @@ private fun loadMap(mapView: MapView,  markers: List<Markers>, mapsViewModel: Ma
             locationPuck = createDefault2DPuck(withBearing = true)
             puckBearingEnabled = true
             enabled = true
+            addOnIndicatorPositionChangedListener{ location ->
+                updateMapLocation(mapView,location.longitude(), location.latitude())
+            }
         }
         bitmapFromDrawableRes(mapView.context, R.drawable.red_mark)?.let{ bitmap ->
             style.addImage("marker-icon-id", bitmap)
             Log.d("Marker.kt Status", "marker-icon-id add")
         }?: Log.d("Marker.kt Status", "Tidak muncul")
-
     }
 
-    markers.forEachIndexed { index, p ->
-        val point = Point.fromLngLat(p.longitude, p.latitude)
-        Log.d("Marker.kt Status", "kulinerMarkers ${p.longitude} ${p.latitude}")
-        showMarker(mapView = mapView,point = point, mapsViewModel= mapsViewModel, marker =  p )
+
+    mapView.mapboxMap.subscribeMapLoaded {
+        // Add markers to the map after it's loaded
+        markers.forEachIndexed { index, p ->
+            val point = Point.fromLngLat(p.longitude, p.latitude)
+            Log.d("Marker.kt Status", "kulinerMarkers ${p.longitude} ${p.latitude}")
+            showMarker(mapView = mapView, point = point, mapsViewModel = mapsViewModel, marker = p)
+        }
+
+//        // Optionally fly to a location (you can update with your logic)
+//        // Example: Fly to a specific coordinate or the user's location
+//        mapView.mapboxMap.flyTo(
+//            CameraOptions.Builder()
+//                .center(Point.fromLngLat(markers.firstOrNull()?.longitude ?: 106.84513, markers.firstOrNull()?.latitude ?: -6.21462))
+//                .zoom(14.0)  // Set desired zoom level
+//                .build()
+//        )
     }
 }
 

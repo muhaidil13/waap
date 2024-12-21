@@ -19,3 +19,20 @@ object RetrofitClient {
         retrofit.create(UploadService::class.java)
     }
 }
+
+object MapboxRetrofitClient {
+    private const val BASE_URL = "https://api.mapbox.com/"
+
+    // Instance Retrofit
+    private val retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    val geocodingService: MapboxSearchService by lazy {
+        retrofit.create(MapboxSearchService::class.java)
+    }
+
+}

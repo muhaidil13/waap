@@ -13,3 +13,4 @@ interface UploadService {
         @Part file: MultipartBody.Part // Data file yang akan diupload
     ): Call<UploadResponse>
 }
+

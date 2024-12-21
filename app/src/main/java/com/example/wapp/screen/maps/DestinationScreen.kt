@@ -113,11 +113,15 @@ fun DestinationScreen(
     }
 
 
-    LaunchedEffect(Unit){
-        mapsViewModel.getMarkersById(id=id)
+    LaunchedEffect(Unit) {
+        mapsViewModel.getMarkersById(id = id)
         mapsViewModel.getListOfReviewByIdMarker(id)
         mapsViewModel.getPhoto(id)
-        if(ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
                 locationUser.value = Point.fromLngLat(location.longitude, location.latitude)
 
@@ -130,22 +134,9 @@ fun DestinationScreen(
         }
     }
     locationUser.value?.let {
-        DestinasionContent(mapsViewModel, navController, id, userId, it )
+        DestinasionContent(mapsViewModel, navController, id, userId, it)
 
     }
-//
-//    ModalNavigationDrawer(
-//        scrimColor = Color.Black.copy(alpha = .5f),
-//        drawerContent = {
-//            ModalDrawerSheet {
-//                markers?.let { mark ->
-//                    InputSugestions(cartItems = mark, locationOfUser = , drawerState = drawerState){ point: Point ->
-//
-//                    }
-//                }
-//            }
-//    }, drawerState=drawerState){
-//    }
 }
 
 @ExperimentalLayoutApi
