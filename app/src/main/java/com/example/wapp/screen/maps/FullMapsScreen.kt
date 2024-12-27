@@ -59,8 +59,6 @@ import com.mapbox.maps.MapInitOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
 import com.mapbox.maps.plugin.PuckBearing
-import com.mapbox.maps.plugin.animation.CameraAnimationsLifecycleListener
-import com.mapbox.maps.plugin.animation.CameraAnimatorType
 import com.mapbox.maps.plugin.animation.MapAnimationOptions
 import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.animation.flyTo
@@ -88,17 +86,18 @@ fun FullMapsScreen(
 
     val markerisAdded by mapsViewModel.markerIsAdded.collectAsState()
     val context = LocalContext.current
-
-    Log.d("Lokasi Saya", "${userLocation}")
-
+    val userPoint = Point.fromLngLat(userLocation.longitude(), userLocation.latitude())
     val mapInitOptions = MapInitOptions(
         context = context,
         cameraOptions = CameraOptions.Builder()
-            .center(userLocation)
+            .center(userPoint)
             .zoom(17.0)
             .build()
     )
     val mapView = MapView(context,mapInitOptions)
+
+    Log.d("Lokasi Saya ", "${userLocation.longitude()}")
+
 
 
     LaunchedEffect(Unit) {
@@ -154,7 +153,9 @@ fun FullMapsScreen(
             .padding(top = innerPadding.calculateTopPadding()))
         {
             val maxheight = maxHeight
-            AndroidView(factory = {mapView}, modifier = Modifier.fillMaxSize())
+            AndroidView(factory = {mapView.apply {
+                observeCameraEvents(this, mapsViewModel = mapsViewModel)
+            }}, modifier = Modifier.fillMaxSize())
 
             Box(modifier = Modifier
                 .fillMaxWidth()
@@ -399,31 +400,20 @@ fun FindLocation(mapView: MapView, mapsViewModel: MapsViewModel){
     val isFocus by mapsViewModel.isFocusPositionUser.collectAsState()
     LaunchedEffect(isFocus){
       mapView.location.apply {
+          mapView.location.apply {
+              puckBearing  = PuckBearing.COURSE
+              locationPuck = createDefault2DPuck(withBearing = true)
+              puckBearingEnabled = true
+              enabled = true
+
+          }
           addOnIndicatorPositionChangedListener{ location ->
               if(isFocus){
                   updateMapLocation(mapView,location.longitude(), location.latitude())
               }
           }
       }
-          mapView.camera.addCameraAnimationsLifecycleListener(object : CameraAnimationsLifecycleListener {
-          override fun onAnimatorStarting(type: CameraAnimatorType, animator: ValueAnimator, owner: String?) {
-              animator.setDuration(500L)
-              mapsViewModel.updateFocusUserCamera(false)
-          }
 
-          override fun onAnimatorEnding(type: CameraAnimatorType, animator: ValueAnimator, owner: String?) {
-              Log.d("CameraAnimation", "Camera animation ended.")
-          }
-
-          override fun onAnimatorCancelling(type: CameraAnimatorType, animator: ValueAnimator, owner: String?) {
-              Log.d("CameraAnimation", "Camera animation cancelled.")
-          }
-
-          override fun onAnimatorInterrupting(type: CameraAnimatorType, runningAnimator: ValueAnimator, runningAnimatorOwner: String?,
-                                              newAnimator: ValueAnimator, newAnimatorOwner: String?) {
-              Log.d("CameraAnimation", "Camera animation interrupted.")
-          }
-      })
   }
     IconButton(
         colors = IconButtonDefaults.iconButtonColors(Color.White),
@@ -442,13 +432,6 @@ private fun loadMap(mapView: MapView,
 ){
 
     mapView.mapboxMap.loadStyle(Style.MAPBOX_STREETS){ style ->
-        mapView.location.apply {
-            puckBearing  = PuckBearing.COURSE
-            locationPuck = createDefault2DPuck(withBearing = true)
-            puckBearingEnabled = true
-            enabled = true
-
-        }
         bitmapFromDrawableRes(mapView.context, R.drawable.red_mark)?.let{ bitmap ->
             style.addImage("marker-icon-id", bitmap)
             Log.d("Marker.kt Status", "marker-icon-id add")
@@ -465,5 +448,10 @@ private fun loadMap(mapView: MapView,
     }
 
 }
+private fun observeCameraEvents(mapView: MapView, mapsViewModel: MapsViewModel) {
+    val mapboxMap = mapView.mapboxMap
 
-
+    mapboxMap.subscribeCameraChanged { cameraState ->
+        mapsViewModel.updateFocusUserCamera(false)
+    }
+}
